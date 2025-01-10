@@ -1,82 +1,175 @@
-﻿// +----------------+
-// |  WeatherData   |
-// +----------------+
-// | +Temperature   |
-// | +Humidity      |
-// +----------------+
-
-public class WeatherData
+﻿// Web User class
+public class WebUser
 {
-    public double Temperature { get; set; }
-    public double Humidity { get; set; }
+    private string _name;
 
-    public void UpdateWeather(double temp, double humidity)
+    public WebUser(string name)
     {
-        Temperature = temp;
-        Humidity = humidity;
-        // Clients would need to manually check for changes
+        _name = name;
+    }
+
+    public void Notify(string channelName, string videoTitle)
+    {
+        Console.WriteLine($"[Web] {_name} has been notified about a new video: '{videoTitle}' on channel '{channelName}'.");
     }
 }
 
-// +----------------+       +----------------+       +----------------+
-// |  Subject       |<------|  WeatherData   |       |  Display       |
-// +----------------+       +----------------+       +----------------+
-// | +Register()    |       | +Temperature   |<------| +Update()      |
-// | +Unregister()  |       | +Humidity      |       +----------------+
-// | +Notify()      |       +----------------+       |  StatsDisplay  |
-// +----------------+                                 +----------------+
-//                                                     +----------------+
-//                                                     |  ForecastDisplay|
-//                                                     +----------------+
-
-public interface ISubject
+// Mobile User class
+public class MobileUser
 {
-    void RegisterObserver(IObserver observer);
-    void UnregisterObserver(IObserver observer);
-    void NotifyObservers();
+    private string _name;
+
+    public MobileUser(string name)
+    {
+        _name = name;
+    }
+
+    public void Notify(string channelName, string videoTitle)
+    {
+        Console.WriteLine($"[Mobile] {_name} has been notified about a new video: '{videoTitle}' on channel '{channelName}'.");
+    }
 }
+
+// YouTube Channel class
+public class YouTubeChannel
+{
+    private string _channelName;
+    private List<WebUser> _webUsers = new List<WebUser>();
+    private List<MobileUser> _mobileUsers = new List<MobileUser>();
+
+    public YouTubeChannel(string channelName)
+    {
+        _channelName = channelName;
+    }
+
+    public void UploadVideo(string videoTitle)
+    {
+        Console.WriteLine($"Channel '{_channelName}' uploaded a new video: '{videoTitle}'.");
+
+        foreach (var user in _webUsers)
+        {
+            user.Notify(_channelName, videoTitle);
+        }
+
+        foreach (var user in _mobileUsers)
+        {
+            user.Notify(_channelName, videoTitle);
+        }
+    }
+}
+
+// Usage
+class Program
+{
+    static void Main(string[] args)
+    {
+        var channel = new YouTubeChannel("TechExplained");
+
+        channel.UploadVideo("Observer Pattern Explained");
+
+        channel.UploadVideo("Design Patterns in C#");
+    }
+}
+
+//Abstract Factory Pattern
 
 public interface IObserver
 {
-    void Update(double temp, double humidity);
+    void Update(string channelName, string videoTitle);
 }
 
-public class WeatherData : ISubject
+public class WebUser : IObserver
 {
-    private List<IObserver> observers = new List<IObserver>();
-    public double Temperature { get; private set; }
-    public double Humidity { get; private set; }
+    private string _name;
 
-    public void RegisterObserver(IObserver observer)
+    public WebUser(string name)
     {
-        observers.Add(observer);
+        _name = name;
     }
 
-    public void UnregisterObserver(IObserver observer)
+    public void Update(string channelName, string videoTitle)
     {
-        observers.Remove(observer);
+        Console.WriteLine($"[Web] {_name} has been notified about a new video: '{videoTitle}' on channel '{channelName}'.");
+    }
+}
+
+// Concrete Observer (Mobile User)
+public class MobileUser : IObserver
+{
+    private string _name;
+
+    public MobileUser(string name)
+    {
+        _name = name;
     }
 
-    public void NotifyObservers()
+    public void Update(string channelName, string videoTitle)
     {
-        foreach (var observer in observers)
+        Console.WriteLine($"[Mobile] {_name} has been notified about a new video: '{videoTitle}' on channel '{channelName}'.");
+    }
+}
+
+// Subject interface
+public interface ISubject
+{
+    void Subscribe(IObserver observer);
+    void Unsubscribe(IObserver observer);
+    void NotifySubscribers(string videoTitle);
+}
+
+// Concrete Subject (YouTubeChannel)
+public class YouTubeChannel : ISubject
+{
+    private string _channelName;
+    private List<IObserver> _observers = new List<IObserver>();
+
+    public YouTubeChannel(string channelName)
+    {
+        _channelName = channelName;
+    }
+
+    public void Subscribe(IObserver observer)
+    {
+        _observers.Add(observer);
+    }
+
+    public void Unsubscribe(IObserver observer)
+    {
+        _observers.Remove(observer);
+    }
+
+    public void NotifySubscribers(string videoTitle)
+    {
+        foreach (var observer in _observers)
         {
-            observer.Update(Temperature, Humidity);
+            observer.Update(_channelName, videoTitle);
         }
     }
 
-    public void SetMeasurements(double temp, double humidity)
+    public void UploadVideo(string videoTitle)
     {
-        Temperature = temp;
-        Humidity = humidity;
-        NotifyObservers();
+        Console.WriteLine($"Channel '{_channelName}' uploaded a new video: '{videoTitle}'.");
+        NotifySubscribers(videoTitle);
     }
 }
 
-public class Display : IObserver
+// Usage
+class Program
 {
-    public void Update(double temp, double humidity)
+    static void Main(string[] args)
     {
-        // Display current conditions
+        var channel = new YouTubeChannel("TechExplained");
+
+        var webUser1 = new WebUser("Alice");
+        var mobileUser1 = new MobileUser("Bob");
+
+        channel.Subscribe(webUser1);
+        channel.Subscribe(mobileUser1);
+
+        channel.UploadVideo("Observer Pattern Explained");
+
+        channel.Unsubscribe(webUser1);
+
+        channel.UploadVideo("Design Patterns in C#");
     }
 }
