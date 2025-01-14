@@ -1,0 +1,2 @@
+### Liskov Substitution Principle (LSP)
+**Subtypes must be substitutable for their base types without altering the correctness of the program. This means derived classes should fully implement all behaviors of their base class without surprising the client code.**
